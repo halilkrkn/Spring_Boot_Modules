@@ -10,34 +10,32 @@ import java.time.LocalDate;
 import java.util.List;
 
 
-// Burada veritabanına proje üzerinden configürasyon yaparak Hibernate ve JPA'yı kullanarak veri ekledik.
-
+// Burada veritabanına proje üzerinden configürasyon yaparak ve JPA'yı kullanarak database'e veri ekledik.
+// Yani burada proje içerisinde biz database'e veri ekledik ve database deki veriler bunlardır.
+// Eğer bbu sınıfı kaldırırsak database'deki verilerde silenecektir.
 @Configuration
 public class StudentConfig {
 
     @Bean
     CommandLineRunner commandLineRunner(StudentRepository studentRepository) {
-        return  args -> {
+        return args -> {
             Student halil = new Student(
                     1L,
                     "Halil",
                     "halilkrkn@gmail.com",
-                    LocalDate.of(1996, 1,28),
-                    27
+                    LocalDate.of(1996, 1, 28)
             );
 
             Student ibrahim = new Student(
                     2L,
                     "İbrahim",
                     "ibrahim@gmail.com",
-                    LocalDate.of(1998, 3,21),
-                    25
+                    LocalDate.of(1991, 3, 21)
             );
 
             studentRepository.saveAll(
-                    List.of(halil,ibrahim)
+                    List.of(halil, ibrahim)
             );
-
         };
     }
 }
