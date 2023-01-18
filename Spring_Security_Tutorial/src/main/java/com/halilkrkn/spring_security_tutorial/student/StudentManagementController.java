@@ -19,7 +19,7 @@ public class StudentManagementController {
     //preAuthorize'ın hasRole('ROLE_') hasAnyRole('ROLE_') hasAuthority('permission') hasAnyAuthority('permission') tanımlanmass.
     //preAuthorize ile ilgili GetMapping, PostMapping, DeleteMapping, PutMapping gibi yapıları öncesinden Authorize edebiliriz. Yani aktif olarak Role'lerini ve Yetkilerini tanımlayabiliriz.
     @GetMapping(path = "/list")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN, ROLE_ADMINTRAINEE')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_ADMINTRAINEE')")
     public List<Student> getAllStudents() {
         return STUDENTS;
     }
