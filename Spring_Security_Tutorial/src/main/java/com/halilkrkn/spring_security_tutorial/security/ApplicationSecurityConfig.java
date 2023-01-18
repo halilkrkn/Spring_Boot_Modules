@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import static com.halilkrkn.spring_security_tutorial.security.ApplicationUserRole.*;
 
@@ -34,7 +35,14 @@ public class ApplicationSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
+
+        //CSRF, ile internet sitesinin güvendiği bir kullanıcı üzerinden, siteye izin verilmeyen ya da kullanıcının farkında olmadığı komutlar gönderilir.
+        // Tarayıcı üzerinden geliştirme yapılıyorsa aktif edilmelidir.
+        // Eğer bir istemci üzerinde çalıştırılacaksa disable edilebilir.
+        // https://reflectoring.io/spring-csrf/
         httpSecurity
+//                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+//                .and()
                 .csrf().disable()
                 .authorizeHttpRequests()
                 .requestMatchers("/","index", "/css/*","/js/*").permitAll() // index.html, css, js hepsine izin verildi.
