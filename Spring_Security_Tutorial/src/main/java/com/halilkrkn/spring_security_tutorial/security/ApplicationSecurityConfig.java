@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.halilkrkn.spring_security_tutorial.security.ApplicationUserRole.*;
 
-// AUTHENTICATION
+// AUTHENTICATION, ROLES, PERMISSION İŞLEMLERİ
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -52,26 +52,26 @@ public class ApplicationSecurityConfig {
                 .and()
                 //Login ve Redirect İşlemleri
                 .formLogin()
-                    .loginPage("/login")
+                    .loginPage("/login") // oluşturulan login.html sayfasına verdik.
                     .permitAll()
                     .defaultSuccessUrl("/courses",true) // Burda bir redirect işlemi yaptık yani loginden sonra courses sayfasına yönlendirdik.
-                    .passwordParameter("passwordy")
-                    .usernameParameter("username")
+                    .passwordParameter("password") // Buradaki parametre ile form'daki password ile secured edildi.
+                    .usernameParameter("username") // Buradaki parametre ile form'daki username ile secured edildi.
                 .and()
                 //RememberMe işlemleri
                 .rememberMe()
-                    .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21))
+                    .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // Rememeber-me'ye erişim süresinin dolacağı süreyi verdik.
                     .key("somethingverysecured")
-                    .rememberMeParameter("remember-me")
+                    .rememberMeParameter("remember-me") // remember-me secured edildi.
                 .and()
                 // Logout İşlemleri
                 .logout()
-                    .logoutUrl("/logout")
-                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
-                    .clearAuthentication(true)
-                    .invalidateHttpSession(true)
+                    .logoutUrl("/logout") // logout url'ini tanımladık.
+                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")) // logout işlemi get httpMethodunu alır ve çıkkış için gereken isteği sağlattık. Ama csrf kullanılsaydı POST httpMethodu alır.
+                    .clearAuthentication(true) // tüm kimlik doğrulamaları temizledik.
+                    .invalidateHttpSession(true) // Sessionları geçersiz kıldık.
                     .deleteCookies("JSESSIONID","remember-me")
-                    .logoutSuccessUrl("/login");
+                    .logoutSuccessUrl("/login"); // logout olduktan sonra Login ekranına yönlendirdik.
 
 
         return httpSecurity.build();
