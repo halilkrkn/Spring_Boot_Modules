@@ -1,5 +1,6 @@
-package com.halilkrkn.spring_security_tutorial.student;
+package com.halilkrkn.spring_security_tutorial.api.controller;
 
+import com.halilkrkn.spring_security_tutorial.data.entities.Student;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

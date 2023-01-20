@@ -1,91 +1,92 @@
 package com.halilkrkn.spring_security_tutorial.security;
 
 
+import com.halilkrkn.spring_security_tutorial.authentication.ApplicationUserService;
+import com.halilkrkn.spring_security_tutorial.jwt.JwtConfig;
+import com.halilkrkn.spring_security_tutorial.jwt.JwtTokenVerifier;
+import com.halilkrkn.spring_security_tutorial.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.crypto.SecretKey;
 
 import static com.halilkrkn.spring_security_tutorial.security.ApplicationUserRole.*;
 
-
-// BASIC AUTH
+// AUTHENTICATION, ROLES, PERMISSION İŞLEMLERİ
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class ApplicationSecurityConfig {
 
-    @Autowired
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationUserService applicationUserService;
+    private final SecretKey secretKey;
+    private final JwtConfig jwtConfig;
 
-    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder) {
+    @Autowired
+    private AuthenticationConfiguration authenticationConfiguration;
+
+    @Autowired
+    public ApplicationSecurityConfig(
+            PasswordEncoder passwordEncoder,
+            ApplicationUserService applicationUserService,
+            SecretKey secretKey,
+            JwtConfig jwtConfig)
+    {
         this.passwordEncoder = passwordEncoder;
+        this.applicationUserService = applicationUserService;
+        this.secretKey = secretKey;
+        this.jwtConfig = jwtConfig;
     }
 
-    // Burada Auth işlemleri için gereken yapıları tanımladık.
+
+
+    // Burada Authentication işlemleri için gereken yapıları tanımladık.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
+        AuthenticationManager authenticationManager = authenticationConfiguration.getAuthenticationManager();
+
         httpSecurity
                 .csrf().disable()
+                // JWT Username Password Filter İşlemleri - Filter ve Stateless Session Kullanımı,
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager, jwtConfig, secretKey))
+                .addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig), JwtUsernameAndPasswordAuthenticationFilter.class)
+
                 .authorizeHttpRequests()
                 .requestMatchers("/","index", "/css/*","/js/*").permitAll() // index.html, css, js hepsine izin verildi.
                 .requestMatchers("/api/**").hasRole(STUDENT.name()) // Role bazlı authentication
-//  Yetkilendirmeleri(Authorizations) ve Rolleri(Roles) bu şekilde yapmak çok mantıklı bir durum olmadığı için ilgili Controller içerisinde preAuthorize ile bu yetkilendirmeleri ve Role'leri atamak daha mantıklıdır.
-//                .requestMatchers(HttpMethod.DELETE,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Yetki bazlı authentication
-//                .requestMatchers(HttpMethod.POST,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())  // Yetki bazlı authentication
-//                .requestMatchers(HttpMethod.PUT,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Yetki bazlı authentication
-//                .requestMatchers("/management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name()) // Yetkileri Role'lere atadık.
                 .anyRequest()
-                .authenticated()
-                .and()
-                .httpBasic();
+                .authenticated();
 
         return httpSecurity.build();
     }
 
-
-    // InMemoryUserDetailsManager ile user yönetimi auth(role) ve permissions(izinler) işlemi yaptık.
-    // Buarada InMemory'de kayıtlı user yönetimi yaptık.
-    // Yani username, password atadık. ilgili user'ın role'ünü ve permissions'ları atadık.
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.builder()
-                .username("user") // USERNAME_STUDENT
-                .password(passwordEncoder.encode("password")) // PASSWORD_STUDENT - ENCODE edilmiş yani password kodlanmış güvenlik için
-//                .roles(STUDENT.name()) // ROLE_STUDENT - Enum içerisinde oluşturduğumuz Student role'ü ve permission'ını buraya atadık.
-                .authorities(STUDENT.getGrantedAuthorities()) // User Yetkilendirmesi verildi. Hiç bir yetkisi yok.
-                .build();
-
-
-        UserDetails adminUser = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("password123"))
-//                .roles(ADMIN.name()) // ROLE_ADMIN - Enum içerisinde oluşturduğumuz ADMIN Role'ü ve permission'larını buraya atadık.
-                .authorities(ADMIN.getGrantedAuthorities()) // ADMIN Yetkilendirmesi verildi. Yani Admin tamemen yetki sahibi oldu  hem student'ı hem de course'ın tamamında(COURSE_READ, COURSE_WRITE, STUDENT_READ, STUDENT_WRITE) yetki sahibi oldu.
-                .build();
-
-        UserDetails adminTraineeUser = User.builder()
-                .username("admin_trainee")
-                .password(passwordEncoder.encode("password123"))
-//                .roles(ADMINTRAINEE.name()) // ROLE_ADMINTRAINEE - Enum içerisinde oluşturduğumuz ADMINTRAINEE Role'ü ve permission'larını buraya atadık.
-                .authorities(ADMINTRAINEE.getGrantedAuthorities()) // ADMIN_TRAINEE Yetkilendirmesi verildi. Buda sadece course'u ve student'ı okuma yetkisine sahip.(COURSE_READ, STUDENT_READ)
-                .build();
-
-        return new InMemoryUserDetailsManager(
-                user,
-                adminUser,
-                adminTraineeUser
-        );
-
+    // DATABASE AUTHENTICATION
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(daoAuthenticationProvider());
     }
 
+    // DATABASE AUTHENTICATION
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder);
+        provider.setUserDetailsService(applicationUserService);
+        return provider;
+    }
 }
